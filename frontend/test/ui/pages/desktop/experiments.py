@@ -14,6 +14,10 @@ class Experiments(Base):
         return self.WelcomePopup(self)
 
     @property
+    def updates_dialog(self):
+        return self.UpdatesDialog(self)
+
+    @property
     def list(self):
         """Return list of experiments on experiments page."""
         experiments = self.find_elements(*self._experiment_locator)
@@ -54,6 +58,14 @@ class Experiments(Base):
         def title(self):
             """Return title text of popup."""
             return self.find_element(*self._popup_locator_title).text
+
+    class UpdatesDialog(Region):
+        _root_locator = (By.ID, 'first-page')
+        _close_button_locator = (By.CSS_SELECTOR, '.modal-skip')
+
+        def close(self):
+            """Close welcome popup using the close button."""
+            self.find_element(*self._close_button_locator).click()
 
     class ExperimentsPreview(Region):
         """Represents the experiments region."""

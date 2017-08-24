@@ -1,7 +1,7 @@
 import os
+import datetime
 
 import pytest
-
 from pages.desktop.home import Home
 from pages.desktop.detail import Detail
 
@@ -23,9 +23,15 @@ def test_install_of_test_pilot_addon(
                     reason='Skip install on Release and Beta Firefox.')
 def test_enable_experiment(base_url, selenium, firefox, notifications):
     """Test enabling of an experiment."""
+    cooky = {'name': 'updates-last-viewed-date',
+             'value': datetime.datetime.now().isoformat(),
+             'max_age': 120,
+             'domain': base_url}
     page = Home(selenium, base_url).open()
+    selenium.add_cookie(cooky)
     experiments = page.header.click_install_button()
     experiments.welcome_popup.close()
+    experiments.updates_dialog.close()
     experiment = experiments.find_experiment(experiment='Dev Example')
     experiment.enable()
     firefox.browser.wait_for_notification(
