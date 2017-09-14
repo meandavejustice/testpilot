@@ -22,6 +22,7 @@ import { chooseTests } from '../actions/varianttests';
 import addonActions from '../actions/addon';
 import newsletterFormActions from '../actions/newsletter-form';
 import RestartPage from '../containers/RestartPage';
+import UpgradeWarningPage from '../containers/UpgradeWarningPage';
 import { isFirefox, isMinFirefoxVersion, isMobile } from '../lib/utils';
 import { staleNewsUpdatesSelector, freshNewsUpdatesSelector } from '../selectors/news';
 import config from '../config';
@@ -90,6 +91,9 @@ class App extends Component {
     this.props.setHasAddon(!!window.navigator.testpilotAddon);
     this.props.setBrowserState({
       userAgent,
+      host: window.location.host,
+      protocol: window.location.protocol,
+      hasAddonManager: (typeof navigator.mozAddonManager !== 'undefined'),
       isFirefox: isFirefox(userAgent),
       isMobile: isMobile(userAgent),
       isMinFirefox: isMinFirefoxVersion(userAgent, config.minFirefoxVersion),
@@ -143,10 +147,24 @@ class App extends Component {
     });
   }
 
+  shouldShowUpgradeWarning() {
+    const { hasAddon, hasAddonManager, host } = this.props;
+
+    if (hasAddon === null) return false;
+    if (hasAddonManager) return false;
+    if (!isFirefox) return false;
+    if (!hasAddonManager && config.nonAddonManagerDevHosts.includes(host)) return false;
+    return true;
+  }
+
   render() {
     const { restart } = this.props.addon;
     if (restart.isRequired) {
-      return <RestartPage {...this.props}/>;
+      return <RestartPage {...this.props} />;
+    }
+
+    if (this.shouldShowUpgradeWarning()) {
+      return <UpgradeWarningPage {...this.props} />;
     }
 
     function* generateMessages(languages, localizations) {
@@ -189,16 +207,14 @@ function sendToGA(type, dataIn) {
 
 const mapStateToProps = state => ({
   addon: state.addon,
+  clientUUID: state.addon.clientUUID,
   experiments: experimentSelector(state),
-  localizations: localizationsSelector(state),
-  negotiatedLanguages: negotiatedLanguagesSelector(state),
-  staleNewsUpdates: staleNewsUpdatesSelector(state),
   freshNewsUpdates: freshNewsUpdatesSelector(state),
-  slug: state.experiments.slug,
   getExperimentBySlug: slug =>
     getExperimentBySlug(state.experiments, slug),
   hasAddon: state.addon.hasAddon,
-  clientUUID: state.addon.clientUUID,
+  hasAddonManager: state.browser.hasAddonManager,
+  host: state.browser.host,
   installed: getInstalled(state.addon),
   installedAddons: state.addon.installedAddons,
   installedLoaded: isInstalledLoaded(state.addon),
@@ -211,8 +227,13 @@ const mapStateToProps = state => ({
   isMobile: state.browser.isMobile,
   userAgent: state.browser.userAgent,
   locale: state.browser.locale,
+  localizations: localizationsSelector(state),
+  negotiatedLanguages: negotiatedLanguagesSelector(state),
   newsletterForm: state.newsletterForm,
+  protocol: state.browser.protocol,
   routing: state.routing,
+  slug: state.experiments.slug,
+  staleNewsUpdates: staleNewsUpdatesSelector(state),
   varianttests: state.varianttests
 });
 
