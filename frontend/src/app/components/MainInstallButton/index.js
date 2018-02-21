@@ -55,7 +55,9 @@ export default class MainInstallButton extends React.Component {
     this.setState({ isInstalling: true });
     installAddon(requireRestart, sendToGA, eventCategory, eventLabel)
       .then(() => {
-        if (postInstallCallback) postInstallCallback();
+        if (postInstallCallback) {
+          postInstallCallback();
+        }
       });
   }
 
